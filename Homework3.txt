@@ -1,0 +1,268 @@
+import pygame
+from sys import exit
+import numpy as np
+
+dtype = np.float32
+
+width = 800
+height = 600
+pygame.init()
+screen = pygame.display.set_mode((width, height), 0, 32)
+pygame.display.set_caption("Frame")
+BLACK = (0, 0, 0)
+WHITE = (255, 255, 255)
+BLUE = (0, 0, 255)
+GREEN = (0, 255, 0)
+RED = (255, 0, 0)
+pts = []
+count = 0
+screen.fill(WHITE)
+clock = pygame.time.Clock()
+def drawPoint(pt, color, thick=3):
+    pygame.draw.circle(screen, color, pt, thick)
+
+# HW2 implement drawLine with drawPoint
+def drawLine(pt0, pt1, color, thick=3):
+    pt0 = np.array(pt0, dtype=np.float32)
+    pt1 = np.array(pt1, dtype=np.float32)
+    for t in np.arange(0, 1, 0.01):
+        lpt = (1 - t) * pt0 + t * pt1
+        drawPoint(lpt, BLUE, thick)
+def BezierCurve(color='RED', thick=2):
+    Bex =[]
+    Bey =[]
+    Bex.clear()
+    Bey.clear()
+    t=0.0
+    while t<=1:
+        for j in range(count):
+            Bex.append(pts[j][0])
+            Bey.append(pts[j][1])
+        for k in range(count):
+            Bex=BezierCurve2(Bex,t,k)
+            Bey=BezierCurve2(Bey,t,k)
+            if k== count-1:
+                drawPoint((int(Bex[0]),int(Bey[0])), color, thick)
+        if t<0.027:
+                t += 0.00004
+        else:
+            t += 0.1
+
+def BezierCurve2(Be,t,k):
+    for i in range(count-k):
+        if i>0:
+            p1 = Be[i-1]
+            p2 = Be[i]
+            Bt = (1-t)*p1+t*p2
+            Be[i-1] =Bt
+    return Be
+
+def drawThreeLine2(pt0, pt1, pt2, color, thick=3):
+    pt0 = np.array(pt0, dtype=np.float32)
+    pt1 = np.array(pt1, dtype=np.float32)
+    pt2 = np.array(pt1, dtype=np.float32)
+    for t in np.arange(0, 1, 0.01):
+        lpt = (1 - t) * pt0 + t * pt1
+        drawPoint(lpt, color, thick)
+
+        lpt1 = (1 - t) * pt1 + t * pt2
+        drawPoint(lpt1, color, thick)
+
+        lpt2 = (1 - t) * pt2 + t * pt0
+        drawPoint(lpt2, color, thick)
+
+def CubicHermiteInterpolation(color='RED', thick=2):
+    if count>=3:
+        countj=3
+        while countj<=count:
+            [x3,y3]=pts[countj-1]
+            [x2,y2]=pts[countj-2]
+            [x1,y1]=pts[countj-3]
+            if(countj>=4):
+                [x0,y0]=pts[countj-4]
+                R1x = (x2-x0)/2
+                R1y = (y2-y0)/2
+            else:
+                R1x = x2-x1
+                R1y = y2-y1
+            R2x = (x3-x1)/2
+            R2y = (y3-y1)/2
+            R3x = x3-x2
+            R3y = y3-y2
+            matrixy = np.array([[y1],[y2],[R1y],[R2y]])
+            matrixx = np.array([[x1],[x2],[R1x],[R2x]])
+            matrix2 = np.array([[0,0,0,1], [1,1,1,1],[0,0,1,0],[3,2,1,0]])
+            matrix3 = np.linalg.inv(matrix2)
+            t=0.0
+            while t<=1.0:
+                matrix5 = np.array([t**3,t**2,t,1])
+                matrix6 = np.dot(matrix5,matrix3)
+                [yt]= np.dot(matrix6,matrixy)
+                [xt]= np.dot(matrix6,matrixx)
+                drawPoint((int(xt),int(yt)), color, thick)
+                t+=0.001
+            matrixy = np.array([[y2],[y3],[R2y],[R3y]])
+            matrixx = np.array([[x2],[x3],[R2x],[R3x]])
+            if countj==count:
+                t=0.0
+                while t<=1.0:
+                    matrix5 = np.array([t**3,t**2,t,1])
+                    matrix6 = np.dot(matrix5,matrix3)
+                    [yt]= np.dot(matrix6,matrixy)
+                    [xt]= np.dot(matrix6,matrixx)
+                    drawPoint((int(xt),int(yt)), color, thick)
+                    t+=0.001
+            countj+=1
+def drawPolylines(color, thick=2):
+    if (count < 2): return
+    for i in range(count - 1):
+        (pts[i], pts[i + 1], color, thick)
+        # pygame.draw.line(screen, color, pts[i], pts[i+1], thick)
+
+
+def drawTriangle2(color, thick=2):
+    if count == 3:
+
+        for i in range(count):
+            if i == 2:
+                drawLine(pts[i], pts[i - 2], color, thick)
+            else:
+                drawLine(pts[i], pts[i + 1], color, thick)
+
+
+def drawTriangle(color, thick=2):
+    if count == 3:
+        for i in range(count):
+            drawLine(pts[0], pts[1], color, thick)
+            drawLine(pts[1], pts[2], color, thick)
+            drawLine(pts[2], pts[0], color, thick)
+
+        drawText(pts[0], pts[1], pts[2], pt)
+
+
+def drawTriangle3(color, thick=2):
+    if count == 3:
+        [x0, y0] = pts[0]
+        [x1, y1] = pts[1]
+        [x2, y2] = pts[2]
+
+        pygame.draw.line(screen, color, (2 * x0 - 1 * x1, 2 * y0 - 1 * y1), (-1 * x0 + 2 * x1, -1 * y0 + 2 * y1), 3)
+        pygame.draw.line(screen, color, (2 * x1 - 1 * x2, 2 * y1 - 1 * y2), (-1 * x1 + 2 * x2, -1 * y1 + 2 * y2), 3)
+        pygame.draw.line(screen, color, (2 * x0 - 1 * x2, 2 * y0 - 1 * y2), (-1 * x0 + 2 * x2, -1 * y0 + 2 * y2), 3)
+
+        drawText(pts[0], pts[1], pts[2], pt)
+
+
+def calculate_t(pt0, pt1, pt2, ptt):
+    t0 = 0
+    t1 = 0
+    t2 = 0
+
+    [x0, y0] = pt0
+    [x1, y1] = pt1
+    [x2, y2] = pt2
+    [xx, yy] = ptt
+
+    a = np.array([[(x0 - x2), (x1 - x2)], [(y0 - y2), (y1 - y2)]])
+    b = np.array([(xx - x2), (yy - y2)])
+
+    t0, t1 = np.linalg.solve(a, b)
+
+    t2 = 1 - t0 - t1
+
+    return t0, t1, t2
+
+
+def drawText(pt0, pt1, pt2, ptt):
+    t0, t1, t2 = calculate_t(pt0, pt1, pt2, ptt)
+
+    [x0, y0] = pt0
+    [x1, y1] = pt1
+    [x2, y2] = pt2
+    [xx, yy] = ptt
+
+    display_t1 = 'pt ' + '(' + str(x0) + ',' + str(y0) + ')'
+    display_t2 = 'pt ' + '(' + str(x1) + ',' + str(y1) + ')'
+    display_t3 = 'pt ' + '(' + str(x2) + ',' + str(y2) + ')'
+    display_t4 = 'pt ' + '(' + str(xx) + ',' + str(yy) + ')' + '--' + '(' + str(round(t0, 2)) + ',' + str(
+        round(t1, 2)) + ',' + str(round(t2, 2))
+
+    font1 = pygame.font.Font('freesansbold.ttf', 32)
+    font2 = pygame.font.Font('freesansbold.ttf', 32)
+    font3 = pygame.font.Font('freesansbold.ttf', 32)
+    font4 = pygame.font.Font('freesansbold.ttf', 32)
+
+    text1 = font1.render(display_t1, True, BLACK, WHITE)
+    text2 = font2.render(display_t2, True, BLACK, WHITE)
+    text3 = font3.render(display_t3, True, BLACK, WHITE)
+    text4 = font4.render(display_t4, True, BLACK, WHITE)
+
+    screen.blit(text1, (10, 10))
+    screen.blit(text2, (10, 50))
+    screen.blit(text3, (10, 100))
+    screen.blit(text4, (10, 150))
+
+
+# Loop until the user clicks the close button.
+done = False
+pressed = 0  # a variable to store which button is pressed, left, right or central
+margin = 6  # a variable determine size of pionts, i.e verteces of polyline
+old_pressed = 0  # a variable to store the condition of the button whether is pressed or released
+old_button1 = 0  # a variable to store the condition of the button weather it is pressed or not
+
+while not done:
+    # This limits the while loop to a max of 10 times per second.
+    # Leave this out and we will use all CPU we can.
+    time_passed = clock.tick(30)
+
+    for event in pygame.event.get():
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            pressed = -1
+        elif event.type == pygame.MOUSEBUTTONUP:
+            pressed = 1
+        elif event.type == pygame.QUIT:
+            done = True
+        else:
+            pressed = 0
+
+    button1, button2, button3 = pygame.mouse.get_pressed()  # recieves a value about whtich button is pressed
+    x, y = pygame.mouse.get_pos()  # stores the positions of the mouse ont the variables of x and y
+    pt = [x, y]  # array to store the positions of the mouse x and y
+    # pygame.draw.circle(screen, RED, pt, 0) # A build-in funtion of pygame to draw a circle
+    # drawText(x, y)
+
+    if old_pressed == -1 and pressed == 1 and old_button1 == 1 and button1 == 0:
+        """
+        if button ptesset it appends the positions of the mouse to pts array;
+        Adds 1 to the count variable;
+        Draw a rectangle in the position where the mouse is pressed
+        """
+        pts.append(pt)
+        count += 1
+        pygame.draw.rect(screen, RED, (pt[0] - margin, pt[1] - margin, 2 * margin, 2 * margin), 5)
+        print("len:" + repr(len(pts)) + " mouse x:" + repr(x) + " y:" + repr(y) + " button:" + repr(
+            button1) + " pressed:" + repr(pressed) + " add pts ...")
+    else:
+        """
+        if any mouse button is pressed the prints the positon of he mouse and the contion of the mouse button 
+
+        """
+        print("len:" + repr(len(pts)) + " mouse x:" + repr(x) + " y:" + repr(y) + " button:" + repr(
+            button1) + " pressed:" + repr(pressed))
+
+    if len(pts) > 1:
+        """
+        if the count of the stored points is more than 1 then draws a ployline
+
+        """
+        # drawPolylines(GREEN, 1)
+        drawTriangle(GREEN, 1)
+        # drawLagrangePolylines(BLUE, 10, 3)
+
+    # Go ahead and update the screen with what we've drawn.
+    # This MUST happen after all the other drawing commands.
+    pygame.display.update()
+    old_button1 = button1  # mouse button pressed
+    old_pressed = pressed  # mouse button released
+
+pygame.quit()
